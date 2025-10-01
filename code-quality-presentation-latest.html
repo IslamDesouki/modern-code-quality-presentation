@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Review & Quality Automation - Alinma Bank</title>
+    <style>
+        :root {
+            --primary-blue: #1e3a8a;
+            --primary-copper: #b45309;
+            --primary-purple: #581c87;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7fafc;
+            --text-primary: #2d3748;
+            --text-secondary: #4a5568;
+            --border-color: #e2e8f0;
+        }
+
+        body[data-theme="dark"] {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --border-color: #4a5568;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-copper) 50%, var(--primary-purple) 100%);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .presentation-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 60px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+            width: 90%;
+            max-width: 75vw;
+            height: 75vh;
+            overflow-y: auto;
+            position: absolute;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            z-index: 10;
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .slide.next {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        /* Alinma Bank Logo */
+        .logo-container {
+            position: fixed;
+            top: 20px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-copper));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-text {
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        body[data-theme="dark"] .theme-toggle {
+            background: rgba(26, 32, 44, 0.95);
+            color: var(--text-primary);
+        }
+
+        .theme-toggle:hover {
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        h1 {
+            color: var(--primary-blue);
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-copper), var(--primary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        h2 {
+            color: var(--primary-blue);
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            border-bottom: 4px solid var(--primary-copper);
+            padding-bottom: 15px;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--text-secondary);
+            font-size: 1.6rem;
+            margin: 25px 0 20px 0;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        ul,
+        ol {
+            margin-left: 25px;
+            margin-bottom: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Sequential Animation Classes */
+        .fade-in-item {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .fade-in-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-in-item {
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .slide-in-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .scale-in-item {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .scale-in-item.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .tool-card {
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid var(--primary-copper);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid var(--border-color);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 20px 50px rgba(180, 83, 9, 0.3);
+        }
+
+        .tool-card h4 {
+            color: var(--primary-blue);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .benefit-box {
+            background: linear-gradient(135deg, #e6fffa, #f0fff4);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid #38b2ac;
+            border: 1px solid rgba(56, 178, 172, 0.2);
+        }
+
+        body[data-theme="dark"] .benefit-box {
+            background: linear-gradient(135deg, #1a2e2e, #1f3333);
+        }
+
+        .implementation-step {
+            background: linear-gradient(135deg, #fef5e7, #fed7aa);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary-copper);
+            position: relative;
+            border: 1px solid rgba(180, 83, 9, 0.2);
+        }
+
+        body[data-theme="dark"] .implementation-step {
+            background: linear-gradient(135deg, #2d2318, #3d2f1f);
+        }
+
+        .step-number {
+            background: var(--primary-copper);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 15px rgba(180, 83, 9, 0.4);
+        }
+
+        .code-example {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            overflow-x: auto;
+            font-size: 0.95rem;
+            border: 2px solid #4a5568;
+            line-height: 1.5;
+        }
+
+        body[data-theme="dark"] .code-example {
+            background: #0d1117;
+            border-color: #30363d;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #f56565;
+            border: 1px solid rgba(245, 101, 101, 0.2);
+        }
+
+        body[data-theme="dark"] .highlight {
+            background: linear-gradient(135deg, #2d1b1b, #3c1f1f);
+        }
+
+        .best-practice {
+            background: linear-gradient(135deg, #f0f9ff, #dbeafe);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary-blue);
+            border: 1px solid rgba(30, 58, 138, 0.2);
+        }
+
+        body[data-theme="dark"] .best-practice {
+            background: linear-gradient(135deg, #1e2a3a, #2a3441);
+        }
+
+        .security-card {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        body[data-theme="dark"] .security-card {
+            background: linear-gradient(135deg, #2d1a1a, #3c2222);
+        }
+
+        /* Navigation Controls */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 50px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        body[data-theme="dark"] .nav-controls {
+            background: rgba(26, 32, 44, 0.95);
+        }
+
+        .nav-button {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            min-width: 120px;
+        }
+
+        .nav-button:hover:not(:disabled) {
+            background: var(--primary-copper);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(180, 83, 9, 0.4);
+        }
+
+        .nav-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Speaker Notes */
+        .speaker-notes-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 65px;
+            height: 65px;
+            background: var(--primary-purple);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.6rem;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 15px 40px rgba(88, 28, 135, 0.4);
+        }
+
+        .speaker-notes-fab:hover {
+            transform: scale(1.15);
+            box-shadow: 0 20px 50px rgba(88, 28, 135, 0.6);
+        }
+
+        .speaker-notes {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            width: 450px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 25px;
+            border-radius: 20px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: none;
+            z-index: 999;
+            max-height: 60vh;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .speaker-notes-fab:hover+.speaker-notes {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .speaker-notes h4 {
+            color: var(--primary-copper);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .speaker-notes p,
+        .speaker-notes li {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .speaker-notes strong {
+            color: var(--primary-blue);
+        }
+
+        /* Slide Progress */
+        .slide-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-copper));
+            transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(180, 83, 9, 0.3);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 120px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 25px;
+            border-radius: 30px;
+            color: var(--primary-blue);
+            font-weight: 700;
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        body[data-theme="dark"] .slide-counter {
+            background: rgba(26, 32, 44, 0.95);
+            color: var(--text-primary);
+        }
+
+        /* Keyboard shortcuts hint */
+        .keyboard-hint {
+            position: fixed;
+            top: 90px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        body[data-theme="dark"] .keyboard-hint {
+            background: rgba(26, 32, 44, 0.9);
+        }
+
+        .keyboard-hint:hover {
+            transform: scale(1.05);
+        }
+
+        .intro-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .intro-item {
+            background: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .intro-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(180, 83, 9, 0.2);
+            border-color: var(--primary-copper);
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 30px;
+                width: 95%;
+                height: 90vh;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            .tool-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .speaker-notes {
+                width: 90%;
+                right: 5%;
+            }
+
+            .nav-controls {
+                bottom: 20px;
+                padding: 10px 20px;
+            }
+
+            .logo-container {
+                top: 15px;
+                left: 15px;
+            }
+
+            .logo {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="presentation-container">
+
+        <!-- Alinma Bank Logo -->
+        <div class="logo-container">
+            <!-- <div class="logo">AB</div>
+            <div class="logo-text">Alinma Bank</div> -->
+            <svg width="212" height="80" viewBox="0 0 212 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_2_139)">
+                    <path
+                        d="M178.528 80C208.653 80 212 76.6667 212 46.6667V33.3333C212 3.33333 208.653 0 178.528 0H165.14C135.015 0 131.668 3.33333 131.668 33.3333V46.6667C131.668 76.6667 135.015 80 165.14 80H178.528ZM181.875 63.3333L161.792 70V16.6667L181.875 10V63.3333ZM31.1737 53.2109L35.4554 51.7905V70.0027H31.1737V53.2109ZM22.6487 70.0027H26.9304V43.3741H22.6487V70.0027ZM14.1209 51.7878H18.4026V70H14.1209V67.3497C12.9624 69.4259 10.7628 70.4626 7.63974 70.4626C2.77883 70.4626 0 67.6952 0 60.8952C0 54.0952 2.77883 51.3279 7.63974 51.3279C10.7656 51.3279 12.9651 52.3646 14.1209 54.4408V51.7905V51.7878ZM14.1209 60.4327C14.1209 56.8599 12.8477 55.4748 9.14255 55.4748C5.43744 55.4748 4.28164 56.8571 4.28164 60.4327V61.3551C4.28164 64.9279 5.55493 66.3129 9.14255 66.3129C12.7302 66.3129 14.1209 64.9306 14.1209 61.3551V60.4327ZM107.418 51.7878H111.585V70H107.418V67.3497C106.145 69.4259 103.945 70.4626 100.819 70.4626C95.9585 70.4626 93.2944 67.6952 93.2944 60.8952C93.2944 54.0952 95.9558 51.3279 100.819 51.3279C103.945 51.3279 106.145 52.3646 107.418 54.4408V51.7905V51.7878ZM107.418 60.4327C107.303 56.8599 106.03 55.4748 102.44 55.4748C98.8494 55.4748 97.4613 56.8571 97.4613 60.4327V61.3551C97.4613 64.9279 98.8494 66.3129 102.44 66.3129C106.03 66.3129 107.301 64.9306 107.418 61.3551V60.4327ZM82.7611 51.3279C79.7527 51.3279 77.7827 52.4816 76.8564 54.6721C75.9301 52.4816 73.9628 51.3279 70.9517 51.3279C68.5199 51.3279 66.6701 52.1361 65.6263 53.7497V51.7905H61.4594V70.0027H65.6263V59.2816C65.6263 56.5143 66.6674 55.4776 69.4462 55.4776C72.225 55.4776 73.1513 56.5143 73.1513 59.2816V70.0027H77.4329V59.2816C77.4329 56.5143 78.3592 55.4776 81.1381 55.4776C83.9169 55.4776 84.9579 56.5143 84.9579 59.2816V70.0027H89.1248V57.668C89.1248 53.6327 86.8105 51.3279 82.7584 51.3279H82.7611ZM31.1737 49.7143H35.4554V45.5646H31.1737V49.7143ZM50.1201 51.3279C47.2265 51.3279 45.1417 52.3646 43.9859 54.2095V51.7878H39.7042V70H43.9859V60.0871C43.9859 56.7429 45.1444 55.4748 48.4998 55.4748C51.8551 55.4748 53.1311 56.7429 53.1311 60.0871V70H57.298V58.4735C57.298 53.8612 54.7515 51.3252 50.1201 51.3252V51.3279ZM62.1207 34.9769C58.9566 34.9769 57.2215 34.1306 57.2215 30.098C57.2215 26.0653 58.9566 25.219 62.1207 25.219C65.2848 25.219 67.0198 26.0653 67.0198 30.098C67.0198 34.1306 65.2848 34.9769 62.1207 34.9769ZM80.4085 19.2245V32.5197H76.0094C72.46 32.5197 71.49 31.3034 71.2359 28.6639C70.673 22.7918 66.5963 21.0694 62.118 21.0694C57.2953 21.0694 52.9344 23.0667 52.9344 30.098C52.9344 30.9823 53.0027 31.7878 53.1339 32.5197H26.8894C23.5313 32.5197 22.258 32.019 22.258 27.9075V10.0027H17.9763V29.4068C17.9763 34.7864 20.3699 36.6694 25.1543 36.6694H55.0903C56.8171 38.4898 59.3938 39.1292 62.118 39.1292C65.4597 39.1292 68.58 38.1687 70.1812 35.2381C71.2933 36.2231 72.9901 36.6694 76.0094 36.6694H84.6901V19.2245H80.4085ZM80.4085 12.1143V16.3782H84.6901V12.1143H80.4085ZM95.5732 44.3537V42.4327H94.0677C93.0266 42.4327 92.2534 42.0871 92.2534 41.2408C92.2534 40.5497 92.7944 40.3184 93.8354 40.3184H94.6852V38.4354H93.2179C91.2506 38.4354 90.2478 39.3197 90.2478 40.6639C90.2478 41.4313 90.5183 42.0082 90.9418 42.4327H89.4363V44.3537H95.5705H95.5732ZM103.134 36.6667V10H98.8521V32.517H87.5482V36.6667H103.136H103.134ZM107.301 10V36.6667H111.582V10H107.301ZM15.8943 36.6667V32.517H12.6919C9.1043 32.517 6.94298 31.2109 6.94298 28.5986C6.94298 27.0612 8.10151 26.215 10.3776 26.215H13.0389V22.0653H9.06604C5.20792 22.0653 2.66134 24.3701 2.66134 27.7524C2.66134 29.7116 3.1641 31.249 4.28164 32.517H0V36.6667H15.897H15.8943ZM90.4008 11.4231L94.6825 10.0027V29.6762H90.4008V11.4258V11.4231Z"
+                        fill="#fff" />
+                </g>
+                <defs>
+                    <clipPath id="clip0_2_139">
+                        <rect width="212" height="80" fill="white" />
+                    </clipPath>
+                </defs>
+            </svg>
+
+        </div>
+
+        <!-- Theme Toggle -->
+        <!-- <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">🌙 Dark Mode</button> -->
+
+        <!-- Progress Bar -->
+        <div class="slide-progress" id="progressBar"></div>
+
+        <!-- Slide Counter -->
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">24</span>
+        </div>
+
+        <!-- Keyboard Hint -->
+        <!-- <div class="keyboard-hint" id="keyboardHint">
+            ← → Space Enter | Numbers 1-24
+        </div> -->
+
+        <!-- Slide 1: Title -->
+        <div class="slide active" data-slide="0">
+            <h1 class="fade-in-item">Unlocking Code Excellence</h1>
+            <div style="text-align: center; margin-top: 30px;">
+                <p class="fade-in-item" style="font-size: 1.4rem; color: var(--text-secondary); margin-bottom: 60px;">
+                    The Synergy of Human Insight and Automation in Modern Code Reviews
+                </p>
+                <div class="intro-grid">
+                    <div class="intro-item scale-in-item">
+                        <strong>📚 Code Review Fundamentals</strong><br>
+                        What, why, and impact of code reviews   
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>👥 The Human Element</strong><br>
+                        Goals, reviewer selection, and timing
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>📝 The Review Process</strong><br>
+                        Checklist, best practices, and common pitfalls
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>🤖 Automation Superpowers for Azure DevOps</strong><br>
+                        Style, testing, hooks, commits, and PR automation
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>🛡️ SonarQube: Your Code Quality Guardian</strong><br>
+                        SonarQube overview and Azure DevOps integration
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>🔒 Security Testing Trinity</strong><br>
+                        SAST, SCA, and DAST explained
+                    </div>
+                    <div class="intro-item scale-in-item">
+                        <strong>📊 Metrics That Matter</strong><br>
+                        Key quality and security metrics
+                    </div>
+                </div>
+            </div>
+            <div style="position: fixed; bottom: 30px; right: 30px; z-index: 1001; color: #b45309; font-size: 1.05rem; font-weight: 600; opacity: 0.85; pointer-events: none;">
+                Islam Desouki | IT Products Design<br>
+                <div style="text-align: center;">IT Products Delivery</div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Opening - The Code Review Revolution 🚀 -->
+        <div class="slide" data-slide="1">
+            <h2 class="fade-in-item" style="text-align: center;">The Code Review Revolution 🚀</h2>
+            <div class="fade-in-item" style="margin-top: 40px; text-align: center;">
+                <h3 style="font-size: 2rem; color: var(--primary-copper); margin-bottom: 30px;">
+                    Honest question:<br>
+                    <span style="font-size: 1.2rem; font-weight: lighter;">
+                        When you see a code review notification, what's your first reaction?
+                    </span>
+                </h3>
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div style="position: relative; margin-bottom: 30px;">
+                        <img src="current-reality-vs-our-goal.png" alt="Current Reality vs Goal" 
+                            style="width: 100%; border-radius: 16px; filter: blur(18px) brightness(0.7); transition: filter 0.5s;">
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 16px; cursor: pointer;"
+                            onmouseover="this.previousElementSibling.style.filter='none';" 
+                            onmouseout="this.previousElementSibling.style.filter='blur(18px) brightness(0.7)';">
+                        </div>
+                    </div>
+                    <blockquote class="fade-in-item" style="text-align: center; font-size: 1.3rem; color: var(--primary-copper); margin-bottom: 30px;">
+                        “Today, we're going to completely reframe how you think about code reviews”
+                    </blockquote>
+                    <div style="position: relative;">
+                        <img src="Review Process Automation Impact.svg" alt="How to Achieve the Goal" 
+                            style="width: 100%; border-radius: 16px; filter: blur(18px) brightness(0.7); transition: filter 0.5s;">
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 16px; cursor: pointer;"
+                            onmouseover="this.previousElementSibling.style.filter='none';" 
+                            onmouseout="this.previousElementSibling.style.filter='blur(18px) brightness(0.7)';">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Code Review Fundamentals -->
+        <div class="slide" data-slide="2">
+            <h2 class="fade-in-item">1: What is a Code Review? 🔍</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Code review is like having a co-pilot check your work before takeoff"
+            </h3>
+            <div class="fade-in-item" style="margin-bottom: 18px;">
+                <strong>Definition:</strong> A systematic examination of source code intended to find bugs, ensure quality, and share knowledge before merging changes into the main codebase.
+            </div>
+            <div class="benefit-box fade-in-item" style="margin-bottom: 30px;">
+                <h3>The Three Pillars of Code Review:</h3>
+                <ul>
+                    <li class="slide-in-item"><strong>Defect Detection:</strong> Catch bugs and vulnerabilities early</li>
+                    <li class="slide-in-item"><strong>Quality Assurance:</strong> Enforce standards and maintainability</li>
+                    <li class="slide-in-item"><strong>Knowledge Sharing:</strong> Spread expertise and onboard new team members</li>
+                </ul>
+            </div>
+            <!-- Image after section 1 -->
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Code Review Benefits & Outcomes.svg" alt="Code Review Pillars"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; box-shadow: none; display: block; margin: 0 auto; transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <hr style="margin: 40px 0; border: none; border-top: 2px solid var(--border-color);">
+
+            <h2 class="fade-in-item">2: Why Code Reviews Are Essential 💎</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                The Million Dollar Question: "What's the cost of a bug in production vs. in review?"
+            </h3>
+            <div class="benefit-box fade-in-item">
+                <h3>The Impact Numbers:</h3>
+                <ul>
+                    <li class="slide-in-item">🐛 <strong>Bug Detection:</strong> Catches 60-90% of defects before production</li>
+                    <li class="slide-in-item">💰 <strong>Cost Savings:</strong> Fixing a bug in review costs 10x less than in production</li>
+                    <li class="slide-in-item">🧠 <strong>Knowledge Transfer:</strong> New team members onboard 50% faster</li>
+                    <li class="slide-in-item">📈 <strong>Code Quality:</strong> Reduces technical debt by 40%</li>
+                </ul>
+            </div>
+            <!-- Image after section 2 -->
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Cost of Bug Fixes - With vs Without Code Reviews.svg" alt="Code Review Impact" 
+                style="width: 100%; max-width: 500px; border-radius: 16px; box-shadow: none; display: block; margin: 0 auto; transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+        </div>
+
+        <!-- Slide 4: The Human Element -->
+        <div class="slide" data-slide="3">
+            <h2 class="fade-in-item">👥 The Human Element</h2>
+
+            <div class="best-practice fade-in-item">
+                <h3>1: Defining Clear Code Review Goals 🎯</h3>
+                <p class="slide-in-item"><strong>Ask Yourself:</strong> "What are we trying to achieve with <em>this</em> review?"</p>
+                <div class="fade-in-item" style="margin: 20px 0;">
+                    <img src="SMART Code Review Goals Framework.svg" alt="SMART Goals Framework" style="width: 100%; max-width: 400px; border-radius: 12px; display: block; margin: 0 auto; transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+                <h4 class="slide-in-item">Goal Categories:</h4>
+                <ul>
+                    <li class="slide-in-item"><strong>🛡️ Security:</strong> "Will this code keep the hackers out?"</li>
+                    <li class="slide-in-item"><strong>⚡ Performance:</strong> "Will this scale when we go viral?"</li>
+                    <li class="slide-in-item"><strong>🏗️ Architecture:</strong> "Will future-me thank present-me for this design?"</li>
+                    <li class="slide-in-item"><strong>📚 Readability:</strong> "Can a junior developer understand this in 6 months?"</li>
+                </ul>
+            </div>
+
+            <div class="best-practice fade-in-item">
+                <h3>2: Identifying the Right Reviewers 👥</h3>
+                <!-- <p class="slide-in-item">"You wouldn't ask a cardiologist to perform brain surgery, right?"</p> -->
+                <div class="fade-in-item" style="margin: 20px 0;">
+                    <img src="Code Review Reviewer Assignment Decision Tree.svg" alt="Reviewer Selection Matrix" style="width: 100%; max-width: 400px; border-radius: 12px; display: block; margin: 0 auto; transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+                <h4 class="slide-in-item">The Perfect Review Team Formula:</h4>
+                <ul>
+                    <li class="slide-in-item"><strong>1 Domain Expert:</strong> Knows the business logic</li>
+                    <li class="slide-in-item"><strong>1 Technical Expert:</strong> Understands the architecture</li>
+                    <li class="slide-in-item"><strong>1 Fresh Eyes:</strong> Someone unfamiliar brings new perspective</li>
+                </ul>
+                <div class="highlight slide-in-item" style="margin-top: 15px;">
+                    <strong>Pro Tip:</strong> Rotate reviewers to spread knowledge and prevent review fatigue!
+                </div>
+            </div>
+
+            <div class="best-practice fade-in-item">
+                <h3>3: The Optimal Time for Code Reviews ⏰</h3>
+                <p class="slide-in-item">"Timing in code reviews is like timing in comedy - get it wrong, and nobody's happy"</p>
+                <div class="fade-in-item" style="margin: 20px 0;">
+                    <img src="The Code Review Timeline.svg" alt="When to Request Reviews" style="width: 100%; max-width: 400px; border-radius: 12px; display: block; margin: 0 auto; transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+                <h4 class="slide-in-item">The Golden Rules of Review Timing:</h4>
+                <ul>
+                    <li class="slide-in-item"><strong>📝 After self-review:</strong> "Would I approve my own code?"</li>
+                    <li class="slide-in-item"><strong>✅ When tests pass:</strong> Green builds only</li>
+                    <li class="slide-in-item"><strong>📦 Small batches:</strong> &lt;400 lines per PR (bigger = longer reviews)</li>
+                    <li class="slide-in-item"><strong>🕐 Within 24 hours:</strong> Stale PRs lose context</li>
+                </ul>
+            </div>
+        </div>
+
+
+        <!-- Slide 5: Comprehensive Code Review Checklist -->
+        <div class="slide" data-slide="4">
+            <h2 class="fade-in-item">Comprehensive Code Review Checklist ✅</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "A pilot's checklist saves lives; a developer's checklist saves sanity"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Code Review Quality Assessment Checklist.svg" alt="Ultimate Review Checklist"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4>The Quick Checklist:</h4>
+                <ul>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Functionality:</strong> Does it do what it's supposed to?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Tests:</strong> Are there tests? Do they actually test the right things?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Readability:</strong> Would a new team member understand this?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Security:</strong> Any obvious vulnerabilities?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Performance:</strong> Will this scale?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Documentation:</strong> Is it documented where needed?</li>
+                    <li class="slide-in-item"><input type="checkbox"> <strong>Error Handling:</strong> What happens when things go wrong?</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 6: Best Practices for Reviewers -->
+        <div class="slide" data-slide="5">
+            <h2 class="fade-in-item">Best Practices for Reviewers 🎭</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Be the reviewer you wish you had when you started coding"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>The Reviewer's Commandments:</h4>
+                <ul>
+                    <li class="slide-in-item"><strong>🤝 Be Kind, Not Nice</strong>
+                        <ul>
+                            <li>❌ "This code is terrible"</li>
+                            <li>✅ "Consider refactoring this method to improve readability"</li>
+                        </ul>
+                    </li>
+                    <li class="slide-in-item"><strong>💡 Suggest, Don't Demand</strong>
+                        <ul>
+                            <li>❌ "Change this to use a map"</li>
+                            <li>✅ "What do you think about using a map here for O(1) lookup?"</li>
+                        </ul>
+                    </li>
+                    <li class="slide-in-item"><strong>📚 Educate, Don't Humiliate</strong>
+                        <ul>
+                            <li>❌ "Everyone knows you shouldn't do this"</li>
+                            <li>✅ "Here's an article explaining why this pattern can cause issues"</li>
+                        </ul>
+                    </li>
+                    <li class="slide-in-item"><strong>🎯 Focus on What Matters</strong></li>
+                </ul>
+                <div class="fade-in-item" style="margin: 20px 0;">
+                    <img src="Review Focus Distribution.svg" alt="Focus on What Matters"
+                        style="width: 100%; max-width: 400px; border-radius: 12px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+            </div>
+            <div class="highlight fade-in-item">
+                <h4>The Feedback Framework:</h4>
+                <ul>
+                    <li class="slide-in-item"><strong>🔴 Must Fix:</strong> Security vulnerabilities, bugs, broken tests</li>
+                    <li class="slide-in-item"><strong>🟡 Should Fix:</strong> Performance issues, code smells</li>
+                    <li class="slide-in-item"><strong>🟢 Consider:</strong> Style improvements, refactoring opportunities</li>
+                    <li class="slide-in-item"><strong>💭 Thinking Out Loud:</strong> "Just curious, why did you choose this approach?"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 7: Best Practices for Authors -->
+        <div class="slide" data-slide="6">
+            <h2 class="fade-in-item">Best Practices for Authors 📝</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Your code is not your baby - it's okay if someone suggests improvements"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Author's Success Guide:</h4>
+                <ol>
+                    <li class="slide-in-item"><strong>📖 Provide Context</strong>
+                        <div class="code-example fade-in-item">
+                            ## What does this PR do?
+                            Fixes the user authentication timeout issue
+                            <br>
+                            ## Why is this change needed?
+                            Users were getting logged out every 5 minutes
+                            <br>
+                            ## How to test?
+                            1. Log in
+                            2. Wait 30 minutes
+                            3. Verify you're still logged in
+                        </div>
+                    </li>
+                    <li class="slide-in-item"><strong>🔍 Self-Review First</strong>
+                        <ul>
+                            <li>Remove debug code</li>
+                            <li>Check for typos</li>
+                            <li>Ensure consistent formatting</li>
+                            <li>Add necessary comments</li>
+                        </ul>
+                    </li>
+                    <li class="slide-in-item"><strong>📏 Keep It Small</strong>
+                        <div class="fade-in-item" style="margin: 20px 0;">
+                            <img src="Pull Request Size vs Review Time Guide.svg" alt="Keep PRs Small"
+                                style="width: 100%; max-width: 400px; border-radius: 12px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                        </div>
+                    </li>
+                    <li class="slide-in-item"><strong>💬 Respond Gracefully</strong>
+                        <ul>
+                            <li>Thank reviewers for their time</li>
+                            <li>Ask for clarification when needed</li>
+                            <li>Explain your reasoning when you disagree</li>
+                            <li>Update the code or document why not</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Slide 8: Common Pitfalls to Avoid -->
+        <div class="slide" data-slide="7">
+            <h2 class="fade-in-item">Common Pitfalls to Avoid 🚫</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Learn from others' mistakes - you won't live long enough to make them all yourself"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Code Review Common Pitfalls to Avoid.svg" alt="Review Anti-Patterns"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="highlight fade-in-item">
+                <h4>The Hall of Shame:</h4>
+                <ol>
+                    <li class="slide-in-item"><strong>🚲 Bike-shedding:</strong> Debating comma placement while missing SQL injection</li>
+                    <li class="slide-in-item"><strong>👻 Ghost Approvals:</strong> "LGTM" without actually reading the code</li>
+                    <li class="slide-in-item"><strong>🏔️ Mountain PRs:</strong> 2000+ line changes that nobody wants to review</li>
+                    <li class="slide-in-item"><strong>⏰ Review Purgatory:</strong> PRs sitting for weeks</li>
+                    <li class="slide-in-item"><strong>🥊 Ego Battles:</strong> "My way or the highway" attitudes</li>
+                    <li class="slide-in-item"><strong>🤖 Over-automation:</strong> Letting tools make all decisions</li>
+                    <li class="slide-in-item"><strong>📚 Documentation Desert:</strong> No context, no description, no hope</li>
+                    <li class="slide-in-item"><strong>🎯 Scope Creep:</strong> "While you're at it, could you also..."</li>
+                    <li class="slide-in-item"><strong>🔥 Hotfix Habits:</strong> "It's urgent, skip the review!"</li>
+                    <li class="slide-in-item"><strong>😴 Review Fatigue:</strong> Same person reviewing everything</li>
+                </ol>
+            </div>
+        </div>
+
+
+        <!-- Slide 9: Automation Superpowers - Overview 🤖 -->
+        <div class="slide" data-slide="8">
+            <h2 class="fade-in-item">Automation Superpowers - Overview 🤖</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Automate the boring stuff, so humans can focus on the interesting problems"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Automated Code Review Pipeline Flow.svg" alt="Automation Overview"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4>What We'll Automate:</h4>
+                <ul>
+                    <li class="slide-in-item">🎨 Code formatting (Google/Airbnb style guides)</li>
+                    <li class="slide-in-item">✅ Unit test execution</li>
+                    <li class="slide-in-item">📝 Commit message standards</li>
+                    <li class="slide-in-item">🔍 Static analysis</li>
+                    <li class="slide-in-item">🛡️ Security scanning</li>
+                    <li class="slide-in-item">📊 Quality metrics</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 10: Applying Standard Code Styles 🎨 -->
+        <div class="slide" data-slide="9">
+            <h2 class="fade-in-item">Applying Standard Code Styles 🎨</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Why argue about formatting when robots can do it for you?"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Style Guide Implementation:</h4>
+                <h4 class="slide-in-item">Java - Google Style Guide</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        &lt;!-- pom.xml --&gt;
+        &lt;plugin&gt;
+          &lt;groupId&gt;com.spotify.fmt&lt;/groupId&gt;
+          &lt;artifactId&gt;fmt-maven-plugin&lt;/artifactId&gt;
+          &lt;version&gt;2.19&lt;/version&gt;
+          &lt;configuration&gt;
+            &lt;style&gt;google&lt;/style&gt;
+          &lt;/configuration&gt;
+          &lt;executions&gt;
+            &lt;execution&gt;
+              &lt;goals&gt;
+                &lt;goal&gt;format&lt;/goal&gt;
+              &lt;/goals&gt;
+            &lt;/execution&gt;
+          &lt;/executions&gt;
+        &lt;/plugin&gt;
+                </pre></details>
+                <h4 class="slide-in-item">Angular - Angular Style Guide</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // .eslintrc.json
+        {
+          "extends": [
+            "plugin:@angular-eslint/recommended",
+            "plugin:@angular-eslint/template/process-inline-templates"
+          ],
+          "rules": {
+            "@angular-eslint/component-selector": [
+              "error",
+              {
+                "prefix": "app",
+                "style": "kebab-case"
+              }
+            ]
+          }
+        }
+                </pre></details>
+                <h4 class="slide-in-item">React Native - Airbnb Style Guide</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // .eslintrc.json
+        {
+          "extends": ["airbnb", "airbnb/hooks"],
+          "rules": {
+            "react/jsx-filename-extension": [1, { "extensions": [".tsx"] }],
+            "import/prefer-default-export": "off"
+          }
+        }
+                </pre></details>
+                <h4 class="slide-in-item">Azure Pipeline Integration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # azure-pipelines.yml
+        - task: Npm@1
+          displayName: 'Lint Check'
+          inputs:
+            command: 'custom'
+            customCommand: 'run lint'
+          condition: always()
+
+        - task: Maven@3
+          displayName: 'Format Check'
+          inputs:
+            mavenPomFile: 'pom.xml'
+            goals: 'fmt:check'
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 11: Unit Testing Automation 🧪 -->
+        <div class="slide" data-slide="10">
+            <h2 class="fade-in-item">Unit Testing Automation 🧪</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "If it's not tested, it's broken - you just don't know it yet"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Test Automation Setup:</h4>
+                <h4 class="slide-in-item">Java Example</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        @Test
+        @DisplayName("Should calculate discount correctly for premium users")
+        void calculateDiscountForPremiumUser() {
+            // Arrange
+            User premiumUser = new User("John", UserType.PREMIUM);
+            OrderService service = new OrderService();
+            
+            // Act
+            double discount = service.calculateDiscount(premiumUser, 100.0);
+            
+            // Assert
+            assertEquals(20.0, discount, "Premium users should get 20% discount");
+        }
+                </pre></details>
+                <h4 class="slide-in-item">Angular Example</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        describe('UserService', () => {
+          it('should return cached data when available', () => {
+            // Arrange
+            const mockData = { id: 1, name: 'Test User' };
+            service.cache = mockData;
+            
+            // Act
+            const result = service.getUser(1);
+            
+            // Assert
+            expect(result).toEqual(mockData);
+            expect(httpClient.get).not.toHaveBeenCalled();
+          });
+        });
+                </pre></details>
+                <h4 class="slide-in-item">React Native Example</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        describe('LoginButton', () => {
+          it('should be disabled when form is invalid', () => {
+            const { getByTestId } = render(
+              <LoginButton email="" password="" />
+            );
+            
+            const button = getByTestId('login-button');
+            expect(button).toBeDisabled();
+          });
+        });
+                </pre></details>
+                <h4 class="slide-in-item">Pipeline Configuration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # azure-pipelines.yml
+        - stage: Test
+          jobs:
+          - job: UnitTests
+            steps:
+            - task: Maven@3
+              displayName: 'Run Java Tests'
+              inputs:
+                mavenPomFile: 'pom.xml'
+                goals: 'test'
+                publishJUnitResults: true
+                testResultsFiles: '**/surefire-reports/TEST-*.xml'
+                codeCoverageToolOption: 'JaCoCo'
+            
+            - task: Npm@1
+              displayName: 'Run JavaScript Tests'
+              inputs:
+                command: 'custom'
+                customCommand: 'run test:ci'
+            
+            - task: PublishCodeCoverageResults@1
+              inputs:
+                codeCoverageTool: 'Cobertura'
+                summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/*coverage.xml'
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 12: Git Hooks for Quality Enforcement 🪝 -->
+        <div class="slide" data-slide="11">
+            <h2 class="fade-in-item">Git Hooks for Quality Enforcement 🪝</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Stop bad code before it even leaves your machine"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Pre-commit Hook Examples:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        #!/bin/sh
+        # .git/hooks/pre-commit
+
+        echo "🔍 Running pre-commit checks..."
+
+        # 1. Check for formatting issues
+        echo "📝 Checking code format..."
+        npm run prettier:check || {
+            echo "❌ Code formatting issues found. Run 'npm run prettier:fix'"
+            exit 1
+        }
+
+        # 2. Run linting
+        echo "🔎 Running ESLint..."
+        npm run lint || {
+            echo "❌ Linting errors found. Please fix them."
+            exit 1
+        }
+
+        # 3. Check for console.logs
+        echo "🚫 Checking for console.logs..."
+        git diff --cached --name-only | xargs grep -l "console.log" && {
+            echo "❌ Found console.log statements. Please remove them."
+            exit 1
+        }
+
+        # 4. Check for hardcoded secrets
+        echo "🔐 Checking for secrets..."
+        git diff --cached --name-only | xargs grep -E "(api_key|apikey|password|secret)" && {
+            echo "❌ Possible secrets detected. Please review."
+            exit 1
+        }
+
+        # 5. Run unit tests for changed files
+        echo "🧪 Running tests..."
+        npm run test:changed || {
+            echo "❌ Tests failing. Please fix them."
+            exit 1
+        }
+
+        echo "✅ All pre-commit checks passed!"
+                </pre></details>
+                <h4 class="slide-in-item">Husky Configuration (Easier Management):</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // package.json
+        {
+          "husky": {
+            "hooks": {
+              "pre-commit": "lint-staged",
+              "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+              "pre-push": "npm run test:ci"
+            }
+          },
+          "lint-staged": {
+            "*.{js,jsx,ts,tsx}": [
+              "eslint --fix",
+              "prettier --write",
+              "jest --bail --findRelatedTests"
+            ],
+            "*.java": [
+              "mvn fmt:format"
+            ]
+          }
+        }
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 13: Conventional Commit Messages 📝 -->
+        <div class="slide" data-slide="12">
+            <h2 class="fade-in-item">Conventional Commit Messages 📝</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Future you will thank present you for clear commit messages"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>The Conventional Commits Standard:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        &lt;type&gt;(&lt;scope&gt;): &lt;subject&gt;
+
+        &lt;body&gt;
+
+        &lt;footer&gt;
+                </pre></details>
+                <h4 class="slide-in-item">Examples:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # ✅ Good Commits
+        feat(auth): add OAuth2 integration with Google
+        fix(api): resolve null pointer in user service
+        docs(readme): update installation instructions
+        refactor(payment): extract tax calculation logic
+        test(cart): add edge cases for empty cart
+        perf(db): add index on user_email column
+        chore(deps): upgrade Angular to v15
+
+        # ❌ Bad Commits
+        "fixed stuff"
+        "WIP"
+        "asdfasdf"
+        "finally works"
+        "😭"
+                </pre></details>
+                <h4 class="slide-in-item">Automated Enforcement with Commitlint:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // commitlint.config.js
+        module.exports = {
+          extends: ['@commitlint/config-conventional'],
+          rules: {
+            'type-enum': [
+              2,
+              'always',
+              ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'revert']
+            ],
+            'subject-case': [2, 'never', ['upper-case']],
+            'subject-min-length': [2, 'always', 10],
+            'body-max-line-length': [2, 'always', 100]
+          }
+        };
+                </pre></details>
+                <h4 class="slide-in-item">Git Hook Integration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        #!/bin/sh
+        # .git/hooks/commit-msg
+
+        # Check commit message format
+        commit_regex='^(feat|fix|docs|style|refactor|perf|test|chore|revert)(\(.+\))?: .{10,}$'
+        commit_message=$(cat $1)
+
+        if ! echo "$commit_message" | grep -qE "$commit_regex"; then
+            echo "❌ Invalid commit message format!"
+            echo "📝 Format: <type>(<scope>): <subject>"
+            echo "📖 Examples:"
+            echo "  feat(auth): add password reset functionality"
+            echo "  fix(api): handle null response from payment service"
+            exit 1
+        fi
+
+        echo "✅ Commit message looks good!"
+                </pre></details>
+                <div class="fade-in-item" style="margin: 30px 0;">
+                    <img src="Conventional Commits Benefits.svg" alt="Commit Benefits"
+                        style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: PR Templates on Azure DevOps 📋 -->
+        <div class="slide" data-slide="13">
+            <h2 class="fade-in-item">PR Templates on Azure DevOps 📋</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "A good PR template is like a recipe - follow it, and success is guaranteed"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Azure DevOps PR Template Setup:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        ## 📋 Description
+        Brief description of what this PR does.
+
+        ## 🎯 Type of Change
+        - [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+        - [ ] ✨ New feature (non-breaking change which adds functionality)
+        - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+        - [ ] 📝 Documentation update
+        - [ ] 🎨 Style update (formatting, renaming)
+        - [ ] ♻️ Code refactor (no functional changes)
+        - [ ] ⚡ Performance improvements
+        - [ ] ✅ Test updates
+
+        ## 🔗 Related Issues
+        Closes #(issue number)
+
+        ## 🧪 Testing
+        - [ ] Unit tests pass locally with my changes
+        - [ ] I have added tests that prove my fix is effective or that my feature works
+        - [ ] New and existing unit tests pass locally with my changes
+
+        ## 📸 Screenshots (if applicable)
+        <details>
+        <summary>Click to expand</summary>
+
+        Add screenshots here
+
+        </details>
+
+        ## ✅ Checklist
+        - [ ] My code follows the style guidelines of this project
+        - [ ] I have performed a self-review of my own code
+        - [ ] I have commented my code, particularly in hard-to-understand areas
+        - [ ] I have made corresponding changes to the documentation
+        - [ ] My changes generate no new warnings
+        - [ ] Any dependent changes have been merged and published
+
+        ## 👥 Reviewers
+        @mention team members
+
+        ## 🚀 Deployment Notes
+        Any special deployment considerations?
+
+        ## 📊 Performance Impact
+        Expected impact on performance (if any)
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 15: Branch Policies on Azure DevOps 🛡️ -->
+        <div class="slide" data-slide="14">
+            <h2 class="fade-in-item">Branch Policies on Azure DevOps 🛡️</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Branch policies act as gatekeepers, ensuring only high-quality, secure code is merged"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Pull Request Merge Validation Process.svg" alt="Branch Policies"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4 class="slide-in-item">Policy Configuration via UI Example:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # Branch Policy Configuration
+        Main Branch Protection:
+          ✅ Require pull request reviews before merging
+             - Minimum reviewers: 2
+             - Dismiss stale reviews on push
+             - Require review from CODEOWNERS
+          
+          ✅ Require status checks before merging
+             - Build must pass
+             - Tests must pass (>80% coverage)
+             - SonarQube quality gate must pass
+             - Security scan must pass
+          
+          ✅ Require branches to be up to date
+          
+          ✅ Require conversation resolution
+          
+          ✅ Include administrators in restrictions
+          
+          ✅ Restrict who can push to matching branches
+          
+          ⛔ Block force pushes and deletions
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 16: Quality Gates on Azure Pipelines 🚦 -->
+        <div class="slide" data-slide="15">
+            <h2 class="fade-in-item">Quality Gates on Azure Pipelines 🚦</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Quality gates are like traffic lights - ignore them at your peril"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Quality Gate Implementation:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # azure-pipelines.yml
+        stages:
+        - stage: QualityGates
+          displayName: 'Quality Gate Checks'
+          jobs:
+          - job: QualityMetrics
+            displayName: 'Validate Quality Metrics'
+            steps:
+            
+            # Code Coverage Gate
+            - task: PowerShell@2
+              displayName: 'Check Code Coverage'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  $coverage = $(System.DefaultWorkingDirectory)/coverage/coverage-summary.json
+                  $percentage = (Get-Content $coverage | ConvertFrom-Json).total.lines.pct
+                  
+                  if ($percentage -lt 80) {
+                    Write-Error "❌ Code coverage is $percentage%, minimum is 80%"
+                    exit 1
+                  }
+                  Write-Host "✅ Code coverage is $percentage%"
+            
+            # Complexity Gate
+            - task: SonarQubePrepare@5
+              displayName: 'Prepare SonarQube Analysis'
+              inputs:
+                SonarQube: 'SonarQubeConnection'
+                scannerMode: 'MSBuild'
+                projectKey: '$(Build.Repository.Name)'
+                projectName: '$(Build.Repository.Name)'
+                extraProperties: |
+                  sonar.exclusions=**/*.test.js,**/*.spec.ts
+                  sonar.coverage.exclusions=**/*.mock.ts
+                  sonar.typescript.lcov.reportPaths=coverage/lcov.info
+            
+            # Security Gate
+            - task: WhiteSource@21
+              displayName: 'Security Vulnerability Check'
+              inputs:
+                cwd: '$(System.DefaultWorkingDirectory)'
+                failBuildOnProjectPolicyViolation: true
+            
+            # Performance Gate
+            - task: PowerShell@2
+              displayName: 'Performance Regression Check'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  # Run performance tests
+                  npm run test:performance
+                  
+                  $baseline = Get-Content baseline-performance.json | ConvertFrom-Json
+                  $current = Get-Content current-performance.json | ConvertFrom-Json
+                  
+                  if ($current.responseTime -gt ($baseline.responseTime * 1.1)) {
+                    Write-Error "❌ Performance regression detected: ${current.responseTime}ms vs ${baseline.responseTime}ms"
+                    exit 1
+                  }
+            
+            # Custom Quality Gate
+            - task: PowerShell@2
+              displayName: 'Custom Quality Validations'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  # Check for TODO comments
+                  $todos = (Get-ChildItem -Recurse -Include *.js,*.ts,*.java | Select-String "TODO" | Measure-Object).Count
+                  if ($todos -gt 10) {
+                    Write-Warning "⚠️ Found $todos TODO comments - consider addressing them"
+                  }
+                  
+                  # Check bundle size
+                  $maxSize = 500KB
+                  $bundleSize = (Get-Item dist/main.js).Length
+                  if ($bundleSize -gt $maxSize) {
+                    Write-Error "❌ Bundle size ${bundleSize} exceeds maximum ${maxSize}"
+                    exit 1
+                  }
+                </pre></details>
+                <div class="fade-in-item" style="margin: 30px 0;">
+                    <img src="SonarQube Code Analysis Workflow.svg" alt="Quality Gate Dashboard"
+                        style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Conventional Review Comments 💬 -->
+        <div class="slide" data-slide="16">
+            <h2 class="fade-in-item">Conventional Review Comments 💬</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Good review comments teach; great review comments inspire"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>The Review Comment Framework:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        ## Comment Structure
+        [SEVERITY] [CATEGORY]: Brief description
+
+        **Issue:** What's wrong
+        **Suggestion:** How to fix it
+        **Example:** Code sample (if helpful)
+        **Reference:** Link to documentation (optional)
+                </pre></details>
+                <h4 class="slide-in-item">Real Examples:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // ❌ Poor Review Comments
+        "This is wrong"
+        "Bad code"
+        "???"
+        "No"
+
+        // ✅ Excellent Review Comments
+
+        // 🔴 [CRITICAL] [SECURITY]: SQL Injection vulnerability
+        // **Issue:** User input is directly concatenated into SQL query
+        // **Suggestion:** Use parameterized queries
+        // **Example:**
+        // const query = `SELECT * FROM users WHERE id = ${userId}`;
+        // // Use:
+        // const query = 'SELECT * FROM users WHERE id = ?';
+        // db.query(query, [userId]);
+        // **Reference:** https://owasp.org/www-project-top-ten/
+
+        // 🟡 [MAJOR] [PERFORMANCE]: N+1 query problem detected
+        // **Issue:** This loop triggers a database query for each user
+        // **Suggestion:** Use a single query with JOIN or batch fetch
+        // **Example:**
+        // users.forEach(user => {
+        //   user.posts = await fetchPosts(user.id);
+        // });
+        // // Use:
+        // const userIds = users.map(u => u.id);
+        // const allPosts = await fetchPostsByUserIds(userIds);
+        // users.forEach(user => {
+        //   user.posts = allPosts.filter(p => p.userId === user.id);
+        // });
+
+        // 🟢 [MINOR] [READABILITY]: Consider extracting magic number
+        // **Issue:** The value 86400000 is not immediately clear
+        // **Suggestion:** Extract to a named constant
+        // **Example:**
+        // const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+        // if (Date.now() - lastUpdate > ONE_DAY_IN_MS) { ... }
+
+        // 💭 [QUESTION]: Curious about this approach
+        // Is there a specific reason for using recursion here instead of iteration?
+        // Not a problem, just wondering about the design choice.
+
+        // 💡 [PRAISE]: Excellent error handling!
+        // I really like how you've covered all edge cases here. 
+        // The custom error messages are particularly helpful for debugging.
+                </pre></details>
+                <h4 class="slide-in-item">Comment Categories & Emojis:</h4>
+                <ul>
+                    <li class="slide-in-item">🔴 <strong>CRITICAL:</strong> Must fix (security, data loss, crashes)</li>
+                    <li class="slide-in-item">🟡 <strong>MAJOR:</strong> Should fix (bugs, performance issues)</li>
+                    <li class="slide-in-item">🟢 <strong>MINOR:</strong> Consider fixing (style, refactoring)</li>
+                    <li class="slide-in-item">💭 <strong>QUESTION:</strong> Just curious, not blocking</li>
+                    <li class="slide-in-item">💡 <strong>PRAISE:</strong> Positive reinforcement</li>
+                    <li class="slide-in-item">📚 <strong>LEARNING:</strong> Educational opportunity</li>
+                </ul>
+                <h4 class="slide-in-item">Azure DevOps Comment Integration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // .azuredevops/review-bot.js
+        const commentTemplates = {
+          security: (issue) => `🔴 [CRITICAL] [SECURITY]: ${issue.title}
+        **Issue:** ${issue.description}
+        **CWE:** ${issue.cweId}
+        **Suggestion:** ${issue.remediation}
+        **Reference:** ${issue.reference}`,
+          
+          performance: (issue) => `🟡 [MAJOR] [PERFORMANCE]: ${issue.title}
+        **Issue:** ${issue.description}
+        **Impact:** ${issue.impact}
+        **Suggestion:** ${issue.suggestion}`,
+          
+          praise: (item) => `💡 [PRAISE]: ${item.title}
+        ${item.description}`
+        };
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 18: SonarQube - Your Code Quality Guardian 🛡️ -->
+        <div class="slide" data-slide="17">
+            <h2 class="fade-in-item">SonarQube - Your Code Quality Guardian 🛡️</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "SonarQube is like having a senior developer review your code 24/7"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="SonarQube Code Analysis Workflow.svg" alt="SonarQube Overview"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4>What is SonarQube?</h4>
+                <p class="slide-in-item">Automated platform for continuous inspection of code quality and security.</p>
+                <h4 class="slide-in-item">Why Use SonarQube?</h4>
+                <ul>
+                    <li class="slide-in-item">🐛 <strong>Catches bugs</strong> before they reach production</li>
+                    <li class="slide-in-item">🔒 <strong>Identifies security vulnerabilities</strong> automatically</li>
+                    <li class="slide-in-item">📊 <strong>Tracks technical debt</strong> in time and money</li>
+                    <li class="slide-in-item">📈 <strong>Monitors code quality trends</strong> over time</li>
+                    <li class="slide-in-item">🎯 <strong>Enforces quality standards</strong> consistently</li>
+                    <li class="slide-in-item">💰 <strong>Saves money</strong> by catching issues early</li>
+                </ul>
+                <h4 class="slide-in-item">Key Metrics Explained:</h4>
+                <table class="fade-in-item" style="width:100%; margin: 20px 0; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-secondary);">
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">Metric</th>
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">What It Means</th>
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">Good Threshold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Bugs</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Code that's definitely broken</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">0 for new code</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Vulnerabilities</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Security weaknesses</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">0 always</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Code Smells</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Maintainability issues</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">&lt;5 per 1K lines</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Coverage</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">% of code tested</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">&gt;80%</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Duplication</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Copy-pasted code</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">&lt;3%</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Security Hotspots</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Needs security review</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Review all</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 19: How SonarQube Works 🔧 -->
+        <div class="slide" data-slide="18">
+            <h2 class="fade-in-item">How SonarQube Works 🔧</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Understanding SonarQube is like learning to read your code's vital signs"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="SonarQube System Architecture Overview.svg" alt="SonarQube Architecture"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4>Projects Structure:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item">
+        SonarQube Organization
+        ├── Frontend Project
+        │   ├── Main Branch
+        │   ├── Feature Branches
+        │   └── Pull Requests
+        ├── Backend Project
+        │   ├── Main Branch
+        │   └── Release Branches
+        └── Mobile Project
+            └── Development Branch
+                </pre></details>
+                <h4 class="slide-in-item">Quality Gates Configuration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        {
+          "name": "Production Ready Gate",
+          "conditions": [
+            {
+              "metric": "new_reliability_rating",
+              "operator": "GREATER_THAN",
+              "value": "1"  // A rating
+            },
+            {
+              "metric": "new_security_rating",
+              "operator": "GREATER_THAN", 
+              "value": "1"  // A rating
+            },
+            {
+              "metric": "new_maintainability_rating",
+              "operator": "GREATER_THAN",
+              "value": "1"  // A rating
+            },
+            {
+              "metric": "new_coverage",
+              "operator": "LESS_THAN",
+              "value": "80"
+            },
+            {
+              "metric": "new_duplicated_lines_density",
+              "operator": "GREATER_THAN",
+              "value": "3"
+            }
+          ]
+        }
+                </pre></details>
+                <h4 class="slide-in-item">Overall Code vs New Code Analysis:</h4>
+                <div class="fade-in-item" style="margin: 30px 0;">
+                    <img src="New Code vs Overall Metrics Comparison.svg" alt="Overall vs New Code"
+                        style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+                <h4 class="slide-in-item">Bugs vs Security Hotspots:</h4>
+                <table class="fade-in-item" style="width:100%; margin: 20px 0; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-secondary);">
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">Aspect</th>
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">Bugs 🐛</th>
+                            <th style="padding: 8px; border: 1px solid var(--border-color);">Security Hotspots 🔥</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Definition</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Code that will fail</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Code that might be exploited</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Certainty</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Definitely wrong</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Potentially risky</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Action</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Must fix</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Must review</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Example</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Null pointer</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Hardcoded password</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);"><strong>Priority</strong></td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Based on severity</td>
+                            <td style="padding: 8px; border: 1px solid var(--border-color);">Always high</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 20: SonarQube Integration with Azure DevOps 🔗 -->
+        <div class="slide" data-slide="19">
+            <h2 class="fade-in-item">SonarQube Integration with Azure DevOps 🔗</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Make SonarQube your automated code reviewer"
+            </h3>
+            <div class="best-practice fade-in-item">
+                <h4>Complete Integration Setup:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # azure-pipelines.yml
+        trigger:
+          branches:
+            include:
+            - main
+            - develop
+          paths:
+            exclude:
+            - docs/*
+            - README.md
+
+        variables:
+          - group: SonarQubeVariables
+          - name: buildConfiguration
+            value: 'Release'
+
+        stages:
+        - stage: Analysis
+          displayName: 'Code Analysis'
+          jobs:
+          - job: SonarQubeAnalysis
+            displayName: 'SonarQube Analysis'
+            pool:
+              vmImage: 'ubuntu-latest'
+            steps:
+            
+            # Prepare SonarQube
+            - task: SonarQubePrepare@5
+              displayName: 'Prepare SonarQube Analysis'
+              inputs:
+                SonarQube: 'SonarQubeServiceConnection'
+                scannerMode: 'MSBuild'
+                projectKey: '$(Build.Repository.Name)'
+                projectName: '$(Build.Repository.Name)'
+                projectVersion: '$(Build.BuildNumber)'
+                extraProperties: |
+                  sonar.exclusions=**/node_modules/**,**/test/**,**/*.spec.ts
+                  sonar.coverage.exclusions=**/*.mock.ts,**/*.config.js
+                  sonar.javascript.lcov.reportPaths=coverage/lcov.info
+                  sonar.typescript.tsconfigPath=tsconfig.json
+                  sonar.pullrequest.key=$(System.PullRequest.PullRequestId)
+                  sonar.pullrequest.branch=$(System.PullRequest.SourceBranch)
+                  sonar.pullrequest.base=$(System.PullRequest.TargetBranch)
+            
+            # Build
+            - task: DotNetCoreCLI@2
+              displayName: 'Build Project'
+              inputs:
+                command: 'build'
+                projects: '**/*.csproj'
+                arguments: '--configuration $(buildConfiguration)'
+            
+            # Run Tests with Coverage
+            - task: DotNetCoreCLI@2
+              displayName: 'Run Tests with Coverage'
+              inputs:
+                command: 'test'
+                projects: '**/*Tests.csproj'
+                arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage"'
+            
+            # Run SonarQube Analysis
+            - task: SonarQubeAnalyze@5
+              displayName: 'Run SonarQube Analysis'
+            
+            # Publish Quality Gate Result
+            - task: SonarQubePublish@5
+              displayName: 'Publish Quality Gate Result'
+              inputs:
+                pollingTimeoutSec: '300'
+            
+            # Break build if quality gate fails
+            - task: PowerShell@2
+              displayName: 'Check Quality Gate'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  $token = [System.Text.Encoding]::UTF8.GetBytes("$(SONAR_TOKEN)" + ":")
+                  $base64 = [System.Convert]::ToBase64String($token)
+                  
+                  $headers = @{
+                    Authorization = "Basic $base64"
+                  }
+                  
+                  $projectStatus = Invoke-RestMethod `
+                    -Uri "$(SONAR_HOST)/api/qualitygates/project_status?projectKey=$(Build.Repository.Name)" `
+                    -Headers $headers
+                  
+                  if ($projectStatus.projectStatus.status -ne "OK") {
+                    Write-Host "##vso[task.logissue type=error]Quality Gate Failed"
+                    
+                    foreach ($condition in $projectStatus.projectStatus.conditions) {
+                      if ($condition.status -ne "OK") {
+                        Write-Host "##vso[task.logissue type=error]$($condition.metricKey): $($condition.actualValue) (threshold: $($condition.errorThreshold))"
+                      }
+                    }
+                    exit 1
+                  }
+                  
+                  Write-Host "✅ Quality Gate Passed!"
+                </pre></details>
+                <h4 class="slide-in-item">Pull Request Decoration:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # PR Comment Integration
+        - task: PowerShell@2
+          displayName: 'Post SonarQube Results to PR'
+          condition: eq(variables['Build.Reason'], 'PullRequest')
+          inputs:
+            targetType: 'inline'
+            script: |
+              $analysis = Get-SonarQubeAnalysis -ProjectKey $(Build.Repository.Name)
+              
+              $comment = @"
+              ## 📊 SonarQube Analysis Results
+              
+              | Metric | Value | Status |
+              |--------|-------|--------|
+              | Bugs | $($analysis.bugs) | $(if($analysis.bugs -eq 0){'✅'}else{'⚠️'}) |
+              | Vulnerabilities | $($analysis.vulnerabilities) | $(if($analysis.vulnerabilities -eq 0){'✅'}else{'🔴'}) |
+              | Code Smells | $($analysis.codeSmells) | $(if($analysis.codeSmells -lt 10){'✅'}else{'⚠️'}) |
+              | Coverage | $($analysis.coverage)% | $(if($analysis.coverage -gt 80){'✅'}else{'⚠️'}) |
+              | Duplication | $($analysis.duplication)% | $(if($analysis.duplication -lt 3){'✅'}else{'⚠️'}) |
+              
+              **Quality Gate:** $($analysis.qualityGate)
+              
+              [View in SonarQube]($(SONAR_HOST)/dashboard?id=$(Build.Repository.Name))
+              "@
+              
+              Post-PRComment -Comment $comment
+                </pre></details>
+            </div>
+        </div>
+
+        
+
+        <!-- Slide 23: Security Testing Trinity - SAST, SCA & DAST 🔐 -->
+        <div class="slide" data-slide="22">
+            <h2 class="fade-in-item">Security Testing Trinity - SAST, SCA & DAST 🔐</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "Security isn't a feature, it's a survival skill"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Security Testing Types and Methods.svg" alt="Security Testing Trinity"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="security-card fade-in-item">
+                <h4>SAST Implementation (SonarQube + Checkmarx):</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # SAST with SonarQube
+        - task: SonarQubePrepare@5
+          inputs:
+            SonarQube: 'SonarQubeConnection'
+            scannerMode: 'CLI'
+            configMode: 'manual'
+            cliProjectKey: '$(Build.Repository.Name)'
+            extraProperties: |
+              sonar.security.hotspots.maxIssues=0
+              sonar.security.rating=A
+
+        # SAST with Checkmarx
+        - task: CxScan@2
+          inputs:
+            projectName: '$(Build.Repository.Name)'
+            preset: 'Checkmarx Default'
+            fullScansScheduled: true
+            incScan: true
+            vulnerabilityThreshold: true
+            high: 0
+            medium: 5
+            low: 10
+                </pre></details>
+                <h4 class="slide-in-item">SCA Implementation (WhiteSource/Snyk):</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # Dependency Scanning with Snyk
+        - task: SnykSecurityScan@1
+          inputs:
+            serviceConnectionEndpoint: 'SnykConnection'
+            testType: 'app'
+            severityThreshold: 'high'
+            monitorWhen: 'always'
+            failOnIssues: true
+            additionalArguments: '--all-projects --detection-depth=6'
+
+        # License Compliance Check
+        - task: PowerShell@2
+          displayName: 'Check License Compliance'
+          inputs:
+            script: |
+              $blockedLicenses = @('GPL-3.0', 'AGPL-3.0')
+              $dependencies = npm list --json --depth=0 | ConvertFrom-Json
+              
+              foreach ($dep in $dependencies.dependencies.PSObject.Properties) {
+                $license = (npm view $dep.Name license)
+                if ($blockedLicenses -contains $license) {
+                  Write-Error "❌ Blocked license $license found in $($dep.Name)"
+                  exit 1
+                }
+              }
+                </pre></details>
+                <h4 class="slide-in-item">DAST Implementation (OWASP ZAP):</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # Dynamic Security Testing
+        - task: Docker@2
+          displayName: 'Run OWASP ZAP DAST'
+          inputs:
+            command: 'run'
+            arguments: |
+              -v $(Build.SourcesDirectory):/zap/wrk/:rw
+              -t owasp/zap2docker-stable zap-baseline.py
+              -t https://$(TEST_ENVIRONMENT_URL)
+              -r zap_report.html
+              -J zap_report.json
+
+        # Parse DAST Results
+        - task: PowerShell@2
+          displayName: 'Process DAST Results'
+          inputs:
+            script: |
+              $report = Get-Content zap_report.json | ConvertFrom-Json
+              $highRisk = $report.alerts | Where-Object { $_.risk -eq "High" }
+              
+              if ($highRisk.Count -gt 0) {
+                Write-Host "##vso[task.logissue type=error]Found $($highRisk.Count) high-risk vulnerabilities"
+                $highRisk | ForEach-Object {
+                  Write-Host "##vso[task.logissue type=error]$($_.name) - $($_.description)"
+                }
+                exit 1
+              }
+                </pre></details>
+                <h4 class="slide-in-item">Security Dashboard Example:</h4>
+                <div class="fade-in-item" style="margin: 30px 0;">
+                    <img src="Security Release Decision Matrix.svg" alt="Security Dashboard"
+                        style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 24: Metrics & Continuous Improvement 📊 -->
+        <div class="slide" data-slide="23">
+            <h2 class="fade-in-item">Metrics & Continuous Improvement 📊</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "What gets measured gets improved"
+            </h3>
+            <div class="fade-in-item" style="margin: 30px 0;">
+                <img src="Code Review Metrics Framework.svg" alt="Metrics Dashboard"
+                    style="width: 100%; max-width: 500px; border-radius: 16px; display: block; margin: 0 auto;transition: transform 0.3s cubic-bezier(.25,.8,.25,1);"
+                    onmouseover="this.style.transform='scale(1.08)';"
+                    onmouseout="this.style.transform='scale(1)';">
+            </div>
+            <div class="best-practice fade-in-item">
+                <h4>Metrics Dashboard Implementation:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        // metrics-collector.ts
+        interface ReviewMetrics {
+          averageReviewTime: number;
+          averagePRSize: number;
+          defectEscapeRate: number;
+          reviewerParticipation: Map<string, number>;
+          codeQualityTrend: QualityTrend[];
+        }
+
+        class MetricsCollector {
+          async collectMetrics(timeRange: DateRange): Promise<ReviewMetrics> {
+            const prs = await this.azureDevOps.getPullRequests(timeRange);
+            
+            return {
+              averageReviewTime: this.calculateAverageReviewTime(prs),
+              averagePRSize: this.calculateAveragePRSize(prs),
+              defectEscapeRate: await this.calculateDefectEscapeRate(timeRange),
+              reviewerParticipation: this.calculateReviewerDistribution(prs),
+              codeQualityTrend: await this.getQualityTrend(timeRange)
+            };
+          }
+          
+          private calculateAverageReviewTime(prs: PullRequest[]): number {
+            const times = prs.map(pr => 
+              pr.mergedAt.getTime() - pr.createdAt.getTime()
+            );
+            return times.reduce((a, b) => a + b, 0) / times.length / 3600000; // hours
+          }
+        }
+                </pre></details>
+                <h4 class="slide-in-item">Monthly Review Report Template:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # Code Review Metrics Report - [Month Year]
+
+        ## 📈 Executive Summary
+        - **PRs Reviewed:** 156 (+12% from last month)
+        - **Average Review Time:** 4.2 hours (-35% improvement)
+        - **Defect Escape Rate:** 2.1% (Target: <5%)
+        - **Code Coverage:** 84% (+3%)
+
+        ## 🎯 Key Achievements
+        - Reduced review cycle time by 35%
+        - Maintained defect escape rate below 5%
+        - Increased automated checks coverage to 90%
+
+        ## 📊 Detailed Metrics
+
+        ### Review Efficiency
+        | Metric | This Month | Last Month | Target | Status |
+        |--------|------------|------------|--------|--------|
+        | Avg Review Time | 4.2h | 6.5h | <8h | ✅ |
+        | Avg PR Size | 245 lines | 412 lines | <400 | ✅ |
+        | First Review Response | 2.1h | 3.8h | <4h | ✅ |
+        | Iterations to Merge | 1.8 | 2.4 | <2 | ✅ |
+
+        ### Code Quality
+        | Metric | This Month | Last Month | Trend |
+        |--------|------------|------------|-------|
+        | Bug Density | 0.3/KLOC | 0.5/KLOC | 📉 |
+        | Security Issues | 2 | 5 | 📉 |
+        | Technical Debt | 12 days | 15 days | 📉 |
+        | Code Duplication | 2.1% | 2.8% | 📉 |
+
+        ## 🎭 Team Participation
+                </pre></details>
+                <h4 class="slide-in-item">Continuous Improvement Actions:</h4>
+                <details class="code-details fade-in-item"><summary style="cursor:pointer; font-size:1.1rem; margin:15px; opacity: 0.6;">Show Code</summary><pre class="code-example fade-in-item" style="background: #272822; color: #f8f8f2;">
+        # Improvement Pipeline
+        - stage: ContinuousImprovement
+          jobs:
+          - job: AnalyzeMetrics
+            steps:
+            - task: PowerShell@2
+              displayName: 'Analyze and Suggest Improvements'
+              inputs:
+                script: |
+                  $metrics = Get-ReviewMetrics -Days 30
+                  
+                  # Generate Improvements
+                  $improvements = @()
+                  
+                  if ($metrics.AverageReviewTime -gt 8) {
+                    $improvements += "⚡ Reduce PR size to speed up reviews"
+                  }
+                  
+                  if ($metrics.DefectEscapeRate -gt 5) {
+                    $improvements += "🔍 Increase test coverage and review thoroughness"
+                  }
+                  
+                  if ($metrics.ReviewerConcentration -gt 0.5) {
+                    $improvements += "👥 Distribute reviews among more team members"
+                  }
+                  
+                  # Post to Team Channel
+                  Post-TeamsMessage -Channel "Engineering" -Message @"
+                  ## 📊 Weekly Review Metrics & Suggestions
+                  
+                  **Metrics Summary:**
+                  - Average Review Time: $($metrics.AverageReviewTime)h
+                  - Defect Escape Rate: $($metrics.DefectEscapeRate)%
+                  - Reviews Completed: $($metrics.ReviewCount)
+                  
+                  **Suggested Improvements:**
+                  $($improvements -join "`n")
+                  "@
+                </pre></details>
+            </div>
+        </div>
+
+        <!-- Slide 25: Questions & Interactive Discussion 💬 -->
+        <div class="slide" data-slide="24">
+            <h2 class="fade-in-item">Questions & Interactive Discussion 💬</h2>
+            <h3 class="fade-in-item" style="margin-bottom: 18px;">
+                "The only bad question is the one not asked!"
+            </h3>
+            
+        </div>
+
+        <!-- Slide 26: Thank You & Contact -->
+        <div class="slide" data-slide="25">
+            <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <h1 class="fade-in-item" style="margin-top: 0;">Thank You! 🙏</h1>
+                <h2 class="fade-in-item" style="margin-bottom: 18px;">
+                    Islam Desouki
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <!-- <div class="nav-controls">
+            <button class="nav-button" onclick="previousSlide()" id="prevBtn">← Previous</button>
+            <button class="nav-button" onclick="nextSlide()" id="nextBtn">Next →</button>
+        </div> -->
+
+    <!-- Speaker Notes FAB -->
+    <button class="speaker-notes-fab" title="Speaker Notes">📝</button>
+    <div class="speaker-notes" id="speakerNotes">
+        <h4>Speaker Notes</h4>
+        <div id="notesContent">
+            <p>Hover over the notes button to see speaker notes for each slide.</p>
+        </div>
+    </div>
+
+    <script>
+        let currentSlideIndex = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+
+        // Speaker notes for each slide
+        const speakerNotes = [
+            {
+            title: "Unlocking Code Excellence",
+            content: `
+                <p><strong>Opening:</strong> Welcome! Today we’ll reframe how you think about code reviews.</p>
+                <p><strong>Agenda:</strong> Human insight, automation, and practical tools for code quality.</p>
+                <p><strong>Audience:</strong> Developers, tech leads, managers.</p>
+                <p><strong>Goal:</strong> Show how combining people and automation leads to better code.</p>
+            `
+            },
+            {
+            title: "The Code Review Revolution 🚀",
+            content: `
+                <p><strong>Key Message:</strong> Most developers dread code reviews—let’s change that.</p>
+                <p><strong>Reality vs Goal:</strong> Show how reviews can be positive, not painful.</p>
+                <p><strong>Impact:</strong> Automation and process can make reviews fast, useful, and less stressful.</p>
+            `
+            },
+            {
+            title: "Code Review Fundamentals",
+            content: `
+                <p><strong>Definition:</strong> Systematic examination of code for bugs, quality, and knowledge sharing.</p>
+                <p><strong>Pillars:</strong> Defect detection, quality assurance, knowledge sharing.</p>
+                <p><strong>Impact:</strong> Reviews catch most bugs before production and save money.</p>
+            `
+            },
+            {
+            title: "The Human Element",
+            content: `
+                <p><strong>Goals:</strong> Set clear review objectives—security, performance, architecture, readability.</p>
+                <p><strong>Reviewers:</strong> Mix domain, technical, and “fresh eyes” for best results.</p>
+                <p><strong>Timing:</strong> Review after self-check, green tests, small PRs, and quickly.</p>
+            `
+            },
+            {
+            title: "Comprehensive Code Review Checklist",
+            content: `
+                <p><strong>Checklist:</strong> Use a consistent checklist for every review.</p>
+                <p><strong>Items:</strong> Functionality, tests, readability, security, performance, docs, error handling.</p>
+                <p><strong>Tip:</strong> Checklists prevent missed issues and speed up reviews.</p>
+            `
+            },
+            {
+            title: "Best Practices for Reviewers",
+            content: `
+                <p><strong>Mindset:</strong> Be kind, suggest improvements, educate, and focus on important issues.</p>
+                <p><strong>Feedback:</strong> Use “must fix”, “should fix”, “consider”, and “thinking out loud” categories.</p>
+                <p><strong>Focus:</strong> Prioritize security, bugs, and business logic over style.</p>
+            `
+            },
+            {
+            title: "Best Practices for Authors",
+            content: `
+                <p><strong>Context:</strong> Provide clear PR descriptions and testing instructions.</p>
+                <p><strong>Self-Review:</strong> Clean up code before submitting.</p>
+                <p><strong>Small PRs:</strong> Keep changes small for easier reviews.</p>
+                <p><strong>Respond:</strong> Be open to feedback and communicate clearly.</p>
+            `
+            },
+            {
+            title: "Common Pitfalls to Avoid",
+            content: `
+                <p><strong>Pitfalls:</strong> Avoid bike-shedding, ghost approvals, huge PRs, review purgatory, ego battles, over-automation, poor docs, scope creep, skipping reviews, and fatigue.</p>
+                <p><strong>Tip:</strong> Learn from these mistakes to improve your review process.</p>
+            `
+            },
+            {
+            title: "Automation Superpowers - Overview",
+            content: `
+                <p><strong>Automation:</strong> Automate formatting, linting, tests, commit standards, static analysis, security, and metrics.</p>
+                <p><strong>Goal:</strong> Free humans to focus on logic and architecture.</p>
+            `
+            },
+            {
+            title: "Applying Standard Code Styles",
+            content: `
+                <p><strong>Style Guides:</strong> Use Google, Airbnb, Angular guides for consistency.</p>
+                <p><strong>Pipeline:</strong> Automate style checks in CI/CD.</p>
+                <p><strong>Tip:</strong> Robots handle formatting—humans review logic.</p>
+            `
+            },
+            {
+            title: "Unit Testing Automation",
+            content: `
+                <p><strong>Tests:</strong> Automate unit tests for every PR.</p>
+                <p><strong>Examples:</strong> Show Java, Angular, React Native test samples.</p>
+                <p><strong>Pipeline:</strong> Run tests and publish coverage in CI/CD.</p>
+            `
+            },
+            {
+            title: "Git Hooks for Quality Enforcement",
+            content: `
+                <p><strong>Hooks:</strong> Use pre-commit and pre-push hooks to catch issues early.</p>
+                <p><strong>Tools:</strong> Husky and lint-staged for easy setup.</p>
+                <p><strong>Tip:</strong> Prevent bad code from entering the repo.</p>
+            `
+            },
+            {
+            title: "Conventional Commit Messages",
+            content: `
+                <p><strong>Standard:</strong> Use conventional commits for clarity and automation.</p>
+                <p><strong>Examples:</strong> Show good vs bad commit messages.</p>
+                <p><strong>Enforcement:</strong> Use commitlint and hooks to enforce standards.</p>
+            `
+            },
+            {
+            title: "PR Templates on Azure DevOps",
+            content: `
+                <p><strong>Templates:</strong> Use PR templates for consistent context and checklists.</p>
+                <p><strong>Benefits:</strong> Faster reviews, better documentation, easier compliance.</p>
+            `
+            },
+            {
+            title: "Branch Policies on Azure DevOps",
+            content: `
+                <p><strong>Policies:</strong> Require reviews, status checks, up-to-date branches, and restrict pushes.</p>
+                <p><strong>Goal:</strong> Ensure only high-quality code is merged.</p>
+            `
+            },
+            {
+            title: "Quality Gates on Azure Pipelines",
+            content: `
+                <p><strong>Quality Gates:</strong> Automate checks for coverage, complexity, security, performance, and custom rules.</p>
+                <p><strong>Tip:</strong> Block merges if gates fail—protect production.</p>
+            `
+            },
+            {
+            title: "Conventional Review Comments",
+            content: `
+                <p><strong>Comments:</strong> Use structured, actionable feedback.</p>
+                <p><strong>Categories:</strong> Critical, major, minor, question, praise, learning.</p>
+                <p><strong>Framework:</strong> Issue, suggestion, example, reference.</p>
+            `
+            },
+            {
+            title: "SonarQube - Your Code Quality Guardian",
+            content: `
+                <p><strong>SonarQube:</strong> Automated code analysis for bugs, vulnerabilities, code smells, coverage, duplication, and hotspots.</p>
+                <p><strong>Metrics:</strong> Explain key metrics and thresholds.</p>
+            `
+            },
+            {
+            title: "How SonarQube Works",
+            content: `
+                <p><strong>Architecture:</strong> SonarQube analyzes projects, branches, and PRs.</p>
+                <p><strong>Quality Gates:</strong> Set thresholds for reliability, security, maintainability, coverage, duplication.</p>
+                <p><strong>Analysis:</strong> Compare new code vs overall code.</p>
+            `
+            },
+            {
+            title: "SonarQube Integration with Azure DevOps",
+            content: `
+                <p><strong>Integration:</strong> Show pipeline setup for SonarQube analysis and quality gate enforcement.</p>
+                <p><strong>PR Decoration:</strong> Automatically post results to PRs for reviewer visibility.</p>
+            `
+            },
+            // Slides 20-21 are missing in the HTML, so skip to 22
+            {
+            title: "Security Testing Trinity - SAST, SCA & DAST",
+            content: `
+                <p><strong>Security:</strong> Use SAST for code, SCA for dependencies, DAST for running apps.</p>
+                <p><strong>Tools:</strong> SonarQube, Checkmarx, Snyk, WhiteSource, OWASP ZAP.</p>
+                <p><strong>Goal:</strong> Layered security for banking-grade protection.</p>
+            `
+            },
+            {
+            title: "Metrics & Continuous Improvement",
+            content: `
+                <p><strong>Metrics:</strong> Track review time, PR size, defect escape rate, coverage, participation.</p>
+                <p><strong>Dashboard:</strong> Use automated reports for improvement.</p>
+                <p><strong>Actions:</strong> Suggest improvements based on metrics.</p>
+            `
+            },
+            {
+            title: "Questions & Interactive Discussion",
+            content: `
+                <p><strong>Discussion:</strong> Invite questions about challenges, automation, metrics, security, and improvement.</p>
+                <p><strong>Goal:</strong> Address concerns and gather feedback for next steps.</p>
+            `
+            }
+        ];
+
+        // Sequential item animation
+        let animationTimeouts = [];
+
+        function animateSlideItems(slideIndex) {
+            try {
+                animationTimeouts.forEach(timeout => clearTimeout(timeout));
+                animationTimeouts = [];
+
+                const slide = slides[slideIndex];
+                if (!slide) return;
+
+                const fadeItems = slide.querySelectorAll('.fade-in-item');
+                const slideItems = slide.querySelectorAll('.slide-in-item');
+                const scaleItems = slide.querySelectorAll('.scale-in-item');
+
+                // Reset animations
+                fadeItems.forEach(item => item.classList.remove('visible'));
+                slideItems.forEach(item => item.classList.remove('visible'));
+                scaleItems.forEach(item => item.classList.remove('visible'));
+
+                // Animate items sequentially
+                fadeItems.forEach((item, index) => {
+                    const timeout = setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 300 + 200);
+                    animationTimeouts.push(timeout);
+                });
+
+                slideItems.forEach((item, index) => {
+                    const timeout = setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 200 + 1000);
+                    animationTimeouts.push(timeout);
+                });
+
+                scaleItems.forEach((item, index) => {
+                    const timeout = setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 250 + 1500);
+                    animationTimeouts.push(timeout);
+                });
+            } catch (error) {
+                console.error('Animation error:', error);
+            }
+
+            // Auto-collapse all code blocks
+            document.querySelectorAll('.code-details').forEach(d => d.open = false);
+            // Optionally auto-expand first code block on slide
+            // const firstCode = slides[slideIndex].querySelector('.code-details');
+            // if (firstCode) setTimeout(() => { firstCode.open = true; }, 1200);
+        }
+
+        let lastSlideIndex = 0; // Add this at the top
+        function updateSlideDisplay() {
+            try {
+                slides.forEach((slide, index) => {
+                    slide.classList.remove('active', 'prev', 'next');
+
+                    if (index === currentSlideIndex) {
+                        slide.classList.add('active');
+                        // Only animate if moving forward or jumping (not back)
+                        if (currentSlideIndex > lastSlideIndex || Math.abs(currentSlideIndex - lastSlideIndex) > 1) {
+                            setTimeout(() => animateSlideItems(index), 150);
+                        }
+                        // Scroll to top of the slide
+                        slide.scrollTop = 0;
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+                    } else if (index < currentSlideIndex) {
+                        slide.classList.add('prev');
+                    } else {
+                        slide.classList.add('next');
+                    }
+                });
+
+                // Update progress
+                const progress = ((currentSlideIndex + 1) / totalSlides) * 100;
+                const progressBar = document.getElementById('progressBar');
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+
+                // Update counters
+                const currentSlideEl = document.getElementById('currentSlide');
+                const totalSlidesEl = document.getElementById('totalSlides');
+                if (currentSlideEl) currentSlideEl.textContent = currentSlideIndex + 1;
+                if (totalSlidesEl) totalSlidesEl.textContent = totalSlides;
+
+                // Update buttons
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                if (prevBtn) prevBtn.disabled = currentSlideIndex === 0;
+                if (nextBtn) nextBtn.disabled = currentSlideIndex === totalSlides - 1;
+
+                updateSpeakerNotes();
+                lastSlideIndex = currentSlideIndex; // Track last index
+            } catch (error) {
+                console.error('Display update error:', error);
+            }
+        }
+
+        function updateSpeakerNotes() {
+            try {
+                const notes = speakerNotes[currentSlideIndex];
+                const notesContent = document.getElementById('notesContent');
+                if (notes && notesContent) {
+                    notesContent.innerHTML = `
+                        <h4>${notes.title}</h4>
+                        ${notes.content}
+                    `;
+                }
+            } catch (error) {
+                console.error('Speaker notes error:', error);
+            }
+        }
+
+        function toggleTheme() {
+            try {
+                const body = document.body;
+                const themeToggle = document.getElementById('themeToggle');
+
+                if (body.getAttribute('data-theme') === 'dark') {
+                    body.removeAttribute('data-theme');
+                    if (themeToggle) themeToggle.textContent = '🌙 Dark Mode';
+                } else {
+                    body.setAttribute('data-theme', 'dark');
+                    if (themeToggle) themeToggle.textContent = '☀️ Light Mode';
+                }
+            } catch (error) {
+                console.error('Theme toggle error:', error);
+            }
+        }
+
+        function nextSlide() {
+            try {
+                if (currentSlideIndex < totalSlides - 1) {
+                    currentSlideIndex++;
+                    updateSlideDisplay();
+                }
+            } catch (error) {
+                console.error('Next slide error:', error);
+            }
+        }
+
+        function previousSlide() {
+            try {
+                if (currentSlideIndex > 0) {
+                    currentSlideIndex--;
+                    updateSlideDisplay();
+                }
+            } catch (error) {
+                console.error('Previous slide error:', error);
+            }
+        }
+
+        function goToSlide(index) {
+            try {
+                if (index >= 0 && index < totalSlides) {
+                    currentSlideIndex = index;
+                    updateSlideDisplay();
+                }
+            } catch (error) {
+                console.error('Go to slide error:', error);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function (event) {
+            try {
+                switch (event.key) {
+                    case 'ArrowRight':
+                    case ' ':
+                    case 'Enter':
+                        event.preventDefault();
+                        nextSlide();
+                        break;
+                    case 'ArrowLeft':
+                    case 'Backspace':
+                        event.preventDefault();
+                        previousSlide();
+                        break;
+                    case 'Home':
+                        event.preventDefault();
+                        goToSlide(0);
+                        break;
+                    case 'End':
+                        event.preventDefault();
+                        goToSlide(totalSlides - 1);
+                        break;
+                    case 'd':
+                    case 'D':
+                        event.preventDefault();
+                        toggleTheme();
+                        break;
+                    default:
+                        if (event.key >= '1' && event.key <= '9') {
+                            const slideNum = parseInt(event.key) - 1;
+                            if (slideNum < totalSlides) {
+                                event.preventDefault();
+                                goToSlide(slideNum);
+                            }
+                        }
+                        break;
+                }
+            } catch (error) {
+                console.error('Keyboard navigation error:', error);
+            }
+        });
+
+        // Initialize presentation
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                updateSlideDisplay();
+
+                // Mobile swipe support
+                let startX = 0;
+                let startY = 0;
+
+                document.addEventListener('touchstart', function (e) {
+                    try {
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                    } catch (error) {
+                        console.error('Touch start error:', error);
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchend', function (e) {
+                    try {
+                        if (!startX || !startY) return;
+
+                        const endX = e.changedTouches[0].clientX;
+                        const endY = e.changedTouches[0].clientY;
+
+                        const diffX = startX - endX;
+                        const diffY = startY - endY;
+
+                        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                            if (diffX > 0) {
+                                nextSlide();
+                            } else {
+                                previousSlide();
+                            }
+                        }
+
+                        startX = 0;
+                        startY = 0;
+                    } catch (error) {
+                        console.error('Touch end error:', error);
+                    }
+                }, { passive: true });
+
+                // Auto-start first slide animations
+                setTimeout(() => animateSlideItems(0), 500);
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>
